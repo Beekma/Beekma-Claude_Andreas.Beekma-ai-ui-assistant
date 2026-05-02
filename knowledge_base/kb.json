@@ -1,102 +1,490 @@
 {
-  "version": "1.0",
-  "lastUpdated": "2026-05-02",
-  "description": "Knowledge Base for the AI UI Assistant. Contains structured information about UI elements, statuses, processes and rules.",
+  "metadata": {
+    "version": "2.0",
+    "domain": "Application Management",
+    "purpose": "Knowledge Base fuer den AI UI Assistant. Enthaelt strukturiertes Domain-Modell mit cross-referenzierten IDs fuer Statuses, Buttons, Felder, Regeln, Nachrichten, Hinweise, Prozessschritte und Rollen.",
+    "language": "de",
+    "schemaVersion": "2.0"
+  },
 
   "statuses": [
     {
+      "id": "DRAFT",
+      "label": "Draft",
+      "phase": "creation",
+      "description": "Antrag wurde begonnen, aber noch nicht eingereicht. Nur fuer den Antragsteller sichtbar.",
+      "nextStep": "Antrag einreichen (submit)",
+      "allowedTransitions": ["CREATED", "CANCELLED"],
+      "isTerminal": false
+    },
+    {
       "id": "CREATED",
       "label": "Created",
-      "description": "Antrag wurde erfasst, aber noch nicht geprueft.",
-      "nextStep": "Validate",
-      "allowedTransitions": ["VALIDATED", "CANCELLED"]
+      "phase": "intake",
+      "description": "Antrag wurde eingereicht und wartet auf Bearbeitung durch einen Sachbearbeiter.",
+      "nextStep": "Pruefung starten (startReview)",
+      "allowedTransitions": ["IN_REVIEW", "CANCELLED"],
+      "isTerminal": false
+    },
+    {
+      "id": "IN_REVIEW",
+      "label": "In Review",
+      "phase": "review",
+      "description": "Der Antrag wird aktuell durch einen Sachbearbeiter geprueft.",
+      "nextStep": "Antrag validieren, zuruecksenden oder zurueckstellen",
+      "allowedTransitions": ["VALIDATED", "RETURNED_TO_APPLICANT", "ON_HOLD", "CANCELLED"],
+      "isTerminal": false
+    },
+    {
+      "id": "RETURNED_TO_APPLICANT",
+      "label": "Returned to Applicant",
+      "phase": "intake",
+      "description": "Der Antrag wurde wegen fehlender oder fehlerhafter Angaben an den Antragsteller zurueckgesendet.",
+      "nextStep": "Antrag korrigieren und erneut einreichen (submit)",
+      "allowedTransitions": ["CREATED", "CANCELLED"],
+      "isTerminal": false
     },
     {
       "id": "VALIDATED",
       "label": "Validated",
-      "description": "Antrag wurde fachlich geprueft und ist bereit zur Freigabe.",
-      "nextStep": "Approve",
-      "allowedTransitions": ["APPROVED", "REJECTED"]
+      "phase": "review",
+      "description": "Der Antrag wurde fachlich geprueft und ist bereit zur Genehmigung oder Ablehnung.",
+      "nextStep": "Antrag genehmigen (approve) oder ablehnen (reject)",
+      "allowedTransitions": ["APPROVED", "REJECTED"],
+      "isTerminal": false
+    },
+    {
+      "id": "ON_HOLD",
+      "label": "On Hold",
+      "phase": "review",
+      "description": "Die Bearbeitung des Antrags ist voruebergehend ausgesetzt, z.B. wegen fehlender externer Informationen.",
+      "nextStep": "Pruefung wieder aufnehmen (startReview) oder abbrechen (cancel)",
+      "allowedTransitions": ["IN_REVIEW", "CANCELLED"],
+      "isTerminal": false
     },
     {
       "id": "APPROVED",
       "label": "Approved",
-      "description": "Antrag wurde freigegeben und ist im System aktiv.",
-      "nextStep": null,
-      "allowedTransitions": []
+      "phase": "decision",
+      "description": "Der Antrag wurde genehmigt. Kein weiterer Handlungsbedarf ausser abschliessender Archivierung.",
+      "nextStep": "Antrag archivieren (archive)",
+      "allowedTransitions": ["ARCHIVED"],
+      "isTerminal": false
     },
     {
       "id": "REJECTED",
       "label": "Rejected",
-      "description": "Antrag wurde abgelehnt.",
-      "nextStep": null,
-      "allowedTransitions": []
+      "phase": "decision",
+      "description": "Der Antrag wurde abgelehnt. Der Antragsteller wurde ueber den Ablehnungsgrund informiert.",
+      "nextStep": "Antrag archivieren (archive)",
+      "allowedTransitions": ["ARCHIVED"],
+      "isTerminal": false
     },
     {
       "id": "CANCELLED",
       "label": "Cancelled",
-      "description": "Antrag wurde durch den User abgebrochen.",
+      "phase": "closure",
+      "description": "Der Antrag wurde abgebrochen, bevor eine Entscheidung getroffen wurde.",
+      "nextStep": "Antrag archivieren (archive)",
+      "allowedTransitions": ["ARCHIVED"],
+      "isTerminal": false
+    },
+    {
+      "id": "ARCHIVED",
+      "label": "Archived",
+      "phase": "closure",
+      "description": "Der Antrag wurde endgueltig archiviert und kann nicht mehr bearbeitet werden.",
       "nextStep": null,
-      "allowedTransitions": []
+      "allowedTransitions": [],
+      "isTerminal": true
     }
   ],
 
   "buttons": [
     {
+      "id": "save",
+      "label": "Speichern",
+      "description": "Speichert den aktuellen Stand des Antrags als Entwurf, ohne ihn einzureichen.",
+      "availableInStatus": ["DRAFT", "RETURNED_TO_APPLICANT"],
+      "leadsToStatus": "DRAFT",
+      "requiresConfirmation": false
+    },
+    {
+      "id": "submit",
+      "label": "Einreichen",
+      "description": "Reicht den Antrag formell ein und uebergibt ihn an den Eingangsbereich.",
+      "availableInStatus": ["DRAFT", "RETURNED_TO_APPLICANT"],
+      "leadsToStatus": "CREATED",
+      "requiresConfirmation": true,
+      "preconditionRule": "BR-001"
+    },
+    {
+      "id": "startReview",
+      "label": "Pruefung starten",
+      "description": "Nimmt den Antrag in die aktive Bearbeitung durch einen Sachbearbeiter.",
+      "availableInStatus": ["CREATED", "ON_HOLD"],
+      "leadsToStatus": "IN_REVIEW",
+      "requiresConfirmation": false,
+      "preconditionRule": "BR-002"
+    },
+    {
       "id": "validate",
-      "label": "Validate",
-      "description": "Startet die fachliche Pruefung des Antrags.",
-      "availableInStatus": ["CREATED"],
-      "leadsToStatus": "VALIDATED"
+      "label": "Validieren",
+      "description": "Bestaetigt, dass der Antrag fachlich korrekt und vollstaendig ist.",
+      "availableInStatus": ["IN_REVIEW"],
+      "leadsToStatus": "VALIDATED",
+      "requiresConfirmation": false,
+      "preconditionRule": "BR-001"
+    },
+    {
+      "id": "returnToApplicant",
+      "label": "An Antragsteller zuruecksenden",
+      "description": "Sendet den Antrag mit Hinweisen zur Korrektur an den Antragsteller zurueck.",
+      "availableInStatus": ["IN_REVIEW"],
+      "leadsToStatus": "RETURNED_TO_APPLICANT",
+      "requiresConfirmation": true
     },
     {
       "id": "approve",
-      "label": "Approve",
-      "description": "Gibt den geprueften Antrag final frei.",
+      "label": "Genehmigen",
+      "description": "Erteilt die finale Genehmigung fuer den geprueften Antrag.",
       "availableInStatus": ["VALIDATED"],
-      "leadsToStatus": "APPROVED"
+      "leadsToStatus": "APPROVED",
+      "requiresConfirmation": true,
+      "preconditionRule": "BR-003"
     },
     {
       "id": "reject",
-      "label": "Reject",
-      "description": "Lehnt einen geprueften Antrag ab.",
+      "label": "Ablehnen",
+      "description": "Lehnt den Antrag ab. Ein Ablehnungsgrund ist Pflicht.",
       "availableInStatus": ["VALIDATED"],
-      "leadsToStatus": "REJECTED"
+      "leadsToStatus": "REJECTED",
+      "requiresConfirmation": true,
+      "preconditionRule": "BR-004"
+    },
+    {
+      "id": "putOnHold",
+      "label": "Zurueckstellen",
+      "description": "Setzt die Bearbeitung des Antrags voruebergehend aus. Ein Grund ist Pflicht.",
+      "availableInStatus": ["IN_REVIEW"],
+      "leadsToStatus": "ON_HOLD",
+      "requiresConfirmation": true,
+      "preconditionRule": "BR-005"
     },
     {
       "id": "cancel",
-      "label": "Cancel",
-      "description": "Bricht einen erfassten Antrag ab.",
-      "availableInStatus": ["CREATED"],
-      "leadsToStatus": "CANCELLED"
+      "label": "Abbrechen",
+      "description": "Bricht den Antrag ab. Kann nicht rueckgaengig gemacht werden.",
+      "availableInStatus": ["DRAFT", "CREATED", "IN_REVIEW", "RETURNED_TO_APPLICANT", "ON_HOLD"],
+      "leadsToStatus": "CANCELLED",
+      "requiresConfirmation": true
+    },
+    {
+      "id": "archive",
+      "label": "Archivieren",
+      "description": "Schliesst den Antrag endgueltig ab und verschiebt ihn ins Archiv.",
+      "availableInStatus": ["APPROVED", "REJECTED", "CANCELLED"],
+      "leadsToStatus": "ARCHIVED",
+      "requiresConfirmation": true,
+      "preconditionRule": "BR-008"
     }
   ],
 
   "mandatoryFields": [
     {
       "id": "customerName",
-      "label": "Customer Name",
-      "description": "Name des Antragstellers oder der antragstellenden Firma.",
-      "validationRule": "Pflichtfeld, mindestens 2 Zeichen."
+      "label": "Name des Antragstellers",
+      "type": "text",
+      "description": "Vollstaendiger Name des Antragstellers oder der antragstellenden Organisation.",
+      "validationRule": "Pflichtfeld. Mindestens 2, maximal 100 Zeichen.",
+      "errorMessageId": "ERR-FIELD-001"
     },
     {
       "id": "applicationType",
-      "label": "Application Type",
-      "description": "Art des Antrags. Auswahl aus vordefinierter Liste.",
-      "validationRule": "Pflichtfeld."
+      "label": "Antragsart",
+      "type": "select",
+      "description": "Art des Antrags. Auswahl aus einer vordefinierten Liste gueltiger Antragstypen.",
+      "validationRule": "Pflichtfeld. Ein Wert muss ausgewaehlt werden.",
+      "errorMessageId": "ERR-FIELD-002"
+    },
+    {
+      "id": "applicantEmail",
+      "label": "E-Mail-Adresse",
+      "type": "email",
+      "description": "Gueltige E-Mail-Adresse des Antragstellers fuer Systembenachrichtigungen.",
+      "validationRule": "Pflichtfeld. Muss ein gueltiges E-Mail-Format haben (name@domain.tld).",
+      "errorMessageId": "ERR-FIELD-003"
+    },
+    {
+      "id": "applicationDate",
+      "label": "Antragsdatum",
+      "type": "date",
+      "description": "Datum der Antragstellung. Wird automatisch beim Einreichen gesetzt.",
+      "validationRule": "Pflichtfeld. Muss ein gueltiges Datum sein und darf nicht in der Zukunft liegen.",
+      "errorMessageId": "ERR-FIELD-004"
+    },
+    {
+      "id": "rejectionReason",
+      "label": "Ablehnungsgrund",
+      "type": "textarea",
+      "description": "Begruendung fuer die Ablehnung des Antrags. Pflichtfeld bei Status REJECTED.",
+      "validationRule": "Pflichtfeld wenn Status REJECTED. Mindestens 20 Zeichen.",
+      "errorMessageId": "ERR-FIELD-005",
+      "conditional": true,
+      "appliesWhen": "status == REJECTED"
+    },
+    {
+      "id": "holdReason",
+      "label": "Grund fuer Zurueckstellung",
+      "type": "textarea",
+      "description": "Erklaerung, warum der Antrag zurueckgestellt wurde. Pflichtfeld bei Status ON_HOLD.",
+      "validationRule": "Pflichtfeld wenn Status ON_HOLD. Mindestens 10 Zeichen.",
+      "errorMessageId": "ERR-FIELD-006",
+      "conditional": true,
+      "appliesWhen": "status == ON_HOLD"
     }
   ],
 
   "businessRules": [
     {
       "id": "BR-001",
-      "rule": "Ein Antrag kann nur validiert werden, wenn alle Pflichtfelder ausgefuellt sind.",
-      "appliesTo": "validate"
+      "category": "submission",
+      "rule": "Alle nicht-konditionalen Pflichtfelder (customerName, applicationType, applicantEmail, applicationDate) muessen ausgefuellt sein, bevor ein Antrag eingereicht oder validiert werden kann.",
+      "appliesTo": ["submit", "validate"],
+      "violationMessageId": "ERR-BR-001"
     },
     {
       "id": "BR-002",
-      "rule": "Nur ein bereits validierter Antrag kann freigegeben werden.",
-      "appliesTo": "approve"
+      "category": "review",
+      "rule": "Eine Pruefung kann nur gestartet werden, wenn der Antrag den Status CREATED oder ON_HOLD hat.",
+      "appliesTo": ["startReview"],
+      "violationMessageId": "ERR-BR-002"
+    },
+    {
+      "id": "BR-003",
+      "category": "approval",
+      "rule": "Ein Antrag kann nur genehmigt werden, wenn er den Status VALIDATED hat.",
+      "appliesTo": ["approve"],
+      "violationMessageId": "ERR-BR-003"
+    },
+    {
+      "id": "BR-004",
+      "category": "rejection",
+      "rule": "Bei einer Ablehnung muss das Feld rejectionReason ausgefuellt sein (mindestens 20 Zeichen).",
+      "appliesTo": ["reject"],
+      "violationMessageId": "ERR-BR-004"
+    },
+    {
+      "id": "BR-005",
+      "category": "hold",
+      "rule": "Bei einer Zurueckstellung muss das Feld holdReason ausgefuellt sein (mindestens 10 Zeichen).",
+      "appliesTo": ["putOnHold"],
+      "violationMessageId": "ERR-BR-005"
+    },
+    {
+      "id": "BR-006",
+      "category": "lifecycle",
+      "rule": "Archivierte Antraege (Status ARCHIVED) koennen nicht mehr bearbeitet, geoeffnet oder in einen anderen Status versetzt werden.",
+      "appliesTo": ["ARCHIVED"],
+      "violationMessageId": "ERR-BR-006"
+    },
+    {
+      "id": "BR-007",
+      "category": "audit",
+      "rule": "Jede Statusaenderung muss mit Benutzername, Zeitstempel und dem vorherigen Status im Audit-Log protokolliert werden.",
+      "appliesTo": ["all"],
+      "violationMessageId": null
+    },
+    {
+      "id": "BR-008",
+      "category": "lifecycle",
+      "rule": "Ein Antrag kann nur archiviert werden, wenn er den Status APPROVED, REJECTED oder CANCELLED hat.",
+      "appliesTo": ["archive"],
+      "violationMessageId": "ERR-BR-007"
+    }
+  ],
+
+  "errorMessages": [
+    {
+      "id": "ERR-FIELD-001",
+      "severity": "error",
+      "message": "Das Feld 'Name des Antragstellers' ist ein Pflichtfeld und muss mindestens 2 Zeichen enthalten."
+    },
+    {
+      "id": "ERR-FIELD-002",
+      "severity": "error",
+      "message": "Bitte waehlen Sie eine Antragsart aus der vorgegebenen Liste aus."
+    },
+    {
+      "id": "ERR-FIELD-003",
+      "severity": "error",
+      "message": "Die eingegebene E-Mail-Adresse ist ungueltig oder fehlt. Bitte pruefen Sie das Format (name@domain.tld)."
+    },
+    {
+      "id": "ERR-FIELD-004",
+      "severity": "error",
+      "message": "Das Antragsdatum fehlt oder liegt in der Zukunft. Bitte geben Sie ein gueltiges Datum ein."
+    },
+    {
+      "id": "ERR-FIELD-005",
+      "severity": "error",
+      "message": "Der Ablehnungsgrund ist ein Pflichtfeld bei Status REJECTED und muss mindestens 20 Zeichen enthalten."
+    },
+    {
+      "id": "ERR-FIELD-006",
+      "severity": "error",
+      "message": "Der Grund fuer die Zurueckstellung ist ein Pflichtfeld bei Status ON_HOLD und muss mindestens 10 Zeichen enthalten."
+    },
+    {
+      "id": "ERR-BR-001",
+      "severity": "error",
+      "message": "Der Antrag kann nicht eingereicht werden. Bitte fuellen Sie alle Pflichtfelder aus."
+    },
+    {
+      "id": "ERR-BR-002",
+      "severity": "error",
+      "message": "Die Pruefung kann nicht gestartet werden. Der Antrag muss den Status CREATED oder ON_HOLD haben."
+    },
+    {
+      "id": "ERR-BR-003",
+      "severity": "error",
+      "message": "Der Antrag kann nicht genehmigt werden. Nur Antraege mit Status VALIDATED koennen genehmigt werden."
+    },
+    {
+      "id": "ERR-BR-004",
+      "severity": "error",
+      "message": "Die Ablehnung kann nicht gespeichert werden. Bitte geben Sie einen Ablehnungsgrund an (mindestens 20 Zeichen)."
+    },
+    {
+      "id": "ERR-BR-005",
+      "severity": "error",
+      "message": "Der Antrag kann nicht zurueckgestellt werden. Bitte geben Sie einen Grund an (mindestens 10 Zeichen)."
+    },
+    {
+      "id": "ERR-BR-006",
+      "severity": "error",
+      "message": "Archivierte Antraege koennen nicht bearbeitet werden. Keine weiteren Aenderungen sind moeglich."
+    },
+    {
+      "id": "ERR-BR-007",
+      "severity": "error",
+      "message": "Archivierung nicht moeglich. Der Antrag muss den Status APPROVED, REJECTED oder CANCELLED haben."
+    }
+  ],
+
+  "hintTexts": [
+    {
+      "id": "HINT-001",
+      "context": "status:DRAFT",
+      "message": "Speichern Sie Ihren Antrag regelmaessig. Als Entwurf ist er nur fuer Sie sichtbar und kann jederzeit weiterbearbeitet werden."
+    },
+    {
+      "id": "HINT-002",
+      "context": "status:IN_REVIEW",
+      "message": "Ihr Antrag wird aktuell geprueft. Sie erhalten eine Benachrichtigung, sobald eine Entscheidung getroffen wurde."
+    },
+    {
+      "id": "HINT-003",
+      "context": "status:RETURNED_TO_APPLICANT",
+      "message": "Ihr Antrag wurde zurueckgesendet. Bitte korrigieren Sie die hingewiesenen Angaben und reichen Sie den Antrag erneut ein."
+    },
+    {
+      "id": "HINT-004",
+      "context": "status:ON_HOLD",
+      "message": "Die Bearbeitung Ihres Antrags wurde voruebergehend ausgesetzt. Bitte warten Sie auf die Rueckmeldung des Sachbearbeiters."
+    },
+    {
+      "id": "HINT-005",
+      "context": "field:customerName",
+      "message": "Geben Sie den vollstaendigen rechtlichen Namen des Antragstellers oder der Organisation ein (mindestens 2 Zeichen)."
+    },
+    {
+      "id": "HINT-006",
+      "context": "field:rejectionReason",
+      "message": "Beschreiben Sie den Ablehnungsgrund praezise und sachlich. Dieser Text ist fuer den Antragsteller sichtbar."
+    },
+    {
+      "id": "HINT-007",
+      "context": "field:holdReason",
+      "message": "Erklaeren Sie, warum der Antrag zurueckgestellt wurde, und nennen Sie wenn moeglich einen erwarteten Zeitrahmen fuer die Weiterbearbeitung."
+    }
+  ],
+
+  "processSteps": [
+    {
+      "id": "capture",
+      "step": 1,
+      "responsibleRole": "applicant",
+      "entryStatus": null,
+      "exitStatus": ["DRAFT"],
+      "typicalDuration": "variabel (bis zu 1 Tag)"
+    },
+    {
+      "id": "submit",
+      "step": 2,
+      "responsibleRole": "applicant",
+      "entryStatus": ["DRAFT", "RETURNED_TO_APPLICANT"],
+      "exitStatus": ["CREATED"],
+      "typicalDuration": "Sofort"
+    },
+    {
+      "id": "intake",
+      "step": 3,
+      "responsibleRole": "caseworker",
+      "entryStatus": ["CREATED"],
+      "exitStatus": ["IN_REVIEW"],
+      "typicalDuration": "1-2 Werktage"
+    },
+    {
+      "id": "review",
+      "step": 4,
+      "responsibleRole": "caseworker",
+      "entryStatus": ["IN_REVIEW"],
+      "exitStatus": ["VALIDATED", "RETURNED_TO_APPLICANT", "ON_HOLD"],
+      "typicalDuration": "3-5 Werktage"
+    },
+    {
+      "id": "decide",
+      "step": 5,
+      "responsibleRole": "approver",
+      "entryStatus": ["VALIDATED"],
+      "exitStatus": ["APPROVED", "REJECTED"],
+      "typicalDuration": "1-2 Werktage"
+    },
+    {
+      "id": "archive",
+      "step": 6,
+      "responsibleRole": "system",
+      "entryStatus": ["APPROVED", "REJECTED", "CANCELLED"],
+      "exitStatus": ["ARCHIVED"],
+      "typicalDuration": "automatisch nach 30 Tagen"
+    }
+  ],
+
+  "roles": [
+    {
+      "id": "applicant",
+      "label": "Antragsteller",
+      "description": "Person oder Organisation, die einen Antrag einreicht und verwaltet.",
+      "permittedActions": ["save", "submit", "cancel"]
+    },
+    {
+      "id": "caseworker",
+      "label": "Sachbearbeiter",
+      "description": "Zustaendige Person fuer Eingangsbearbeitung, Pruefung und Weiterleitung von Antraegen.",
+      "permittedActions": ["startReview", "validate", "returnToApplicant", "putOnHold", "cancel"]
+    },
+    {
+      "id": "approver",
+      "label": "Genehmiger",
+      "description": "Bevollmaechtigte Person fuer finale Genehmigung oder Ablehnung validierter Antraege.",
+      "permittedActions": ["approve", "reject"]
+    },
+    {
+      "id": "system",
+      "label": "System",
+      "description": "Automatisierte Systemaktionen, die ohne manuellen Eingriff ausgefuehrt werden.",
+      "permittedActions": ["archive"]
     }
   ]
 }

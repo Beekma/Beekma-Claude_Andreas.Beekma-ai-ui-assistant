@@ -96,3 +96,66 @@ with the credentials persisted in the database.
 
 - The Phase 1 setup is intentionally minimal. The migration path to
   Phase 2 is documented and deliberately scheduled.
+
+---
+
+## ADR-004: Knowledge Base structure with cross-referenced IDs
+
+**Status**: Accepted
+**Date**: 2026-05-02
+
+### Context
+
+V1 der KB war eine flache Liste. Beim Wachsen wurde klar, dass
+cross-referenzen zwischen Status, Buttons, Rules und Fields fehlen,
+was praezise LLM-Antworten erschwert.
+
+### Decision
+
+V2.0 fuehrt stabile IDs ein, plus explizite Referenzen ueber diese
+IDs. Object-orientiertes Domain Modeling.
+
+### Rationale
+
+- Praezise Antworten durch Referenzen, Trennung von Logik und Text
+  fuer spaetere i18n, neue Sektionen (errorMessages, hintTexts,
+  processSteps, roles) decken Dimensionen ab, die ein reines
+  CRUD-Modell nicht abbildet.
+
+### Consequences
+
+- Mehr Verbositaet, aber besser lesbar. Tools koennen in Zukunft die
+  Integritaet der Cross-Referenzen pruefen.
+
+---
+
+## ADR-005: Segregation of duties between caseworker and approver
+
+**Status**: Accepted
+**Date**: 2026-05-02
+
+### Context
+
+Die Frage, ob ein Sachbearbeiter im Status IN_REVIEW einen Antrag
+direkt ablehnen darf, kam beim Review der KB v2.0 auf. Das Modell
+trennt aktuell Pruefen und Entscheiden.
+
+### Decision
+
+Sachbearbeiter koennen in der Pruefphase nur validieren, zuruecksenden
+oder pausieren. Die endgueltige Ablehnung wie auch die Freigabe ist
+dem Genehmiger vorbehalten.
+
+### Rationale
+
+- Klassisches Vier-Augen-Prinzip beziehungsweise Segregation of
+  Duties. Pruefverantwortung und Entscheidungsverantwortung sind
+  getrennt. Reduziert Compliance-Risiken und ist in vielen
+  regulierten Branchen Pflicht.
+
+### Consequences
+
+- Der Prozess hat einen klaren Uebergabepunkt vom Sachbearbeiter zum
+  Genehmiger. Das Modell ist strenger als noetig fuer kleine
+  Organisationen, aber sauber generalisierbar fuer
+  Unternehmens-Use-Cases.
