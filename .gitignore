@@ -1,0 +1,29 @@
+# Secrets - NIEMALS committen!
+.env
+*.key
+*.pem
+*.secret
+
+# Logs
+logs/
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# PHP
+vendor/
+composer.lock
+
+# DB-Dumps
+*.sql.bak
+*.sqlite
+
+# Local notes
+system-prompt-draft.txt
+notes/

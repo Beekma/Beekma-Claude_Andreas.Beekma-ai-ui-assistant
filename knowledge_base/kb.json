@@ -1,0 +1,102 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-05-02",
+  "description": "Knowledge Base for the AI UI Assistant. Contains structured information about UI elements, statuses, processes and rules.",
+
+  "statuses": [
+    {
+      "id": "CREATED",
+      "label": "Created",
+      "description": "Antrag wurde erfasst, aber noch nicht geprueft.",
+      "nextStep": "Validate",
+      "allowedTransitions": ["VALIDATED", "CANCELLED"]
+    },
+    {
+      "id": "VALIDATED",
+      "label": "Validated",
+      "description": "Antrag wurde fachlich geprueft und ist bereit zur Freigabe.",
+      "nextStep": "Approve",
+      "allowedTransitions": ["APPROVED", "REJECTED"]
+    },
+    {
+      "id": "APPROVED",
+      "label": "Approved",
+      "description": "Antrag wurde freigegeben und ist im System aktiv.",
+      "nextStep": null,
+      "allowedTransitions": []
+    },
+    {
+      "id": "REJECTED",
+      "label": "Rejected",
+      "description": "Antrag wurde abgelehnt.",
+      "nextStep": null,
+      "allowedTransitions": []
+    },
+    {
+      "id": "CANCELLED",
+      "label": "Cancelled",
+      "description": "Antrag wurde durch den User abgebrochen.",
+      "nextStep": null,
+      "allowedTransitions": []
+    }
+  ],
+
+  "buttons": [
+    {
+      "id": "validate",
+      "label": "Validate",
+      "description": "Startet die fachliche Pruefung des Antrags.",
+      "availableInStatus": ["CREATED"],
+      "leadsToStatus": "VALIDATED"
+    },
+    {
+      "id": "approve",
+      "label": "Approve",
+      "description": "Gibt den geprueften Antrag final frei.",
+      "availableInStatus": ["VALIDATED"],
+      "leadsToStatus": "APPROVED"
+    },
+    {
+      "id": "reject",
+      "label": "Reject",
+      "description": "Lehnt einen geprueften Antrag ab.",
+      "availableInStatus": ["VALIDATED"],
+      "leadsToStatus": "REJECTED"
+    },
+    {
+      "id": "cancel",
+      "label": "Cancel",
+      "description": "Bricht einen erfassten Antrag ab.",
+      "availableInStatus": ["CREATED"],
+      "leadsToStatus": "CANCELLED"
+    }
+  ],
+
+  "mandatoryFields": [
+    {
+      "id": "customerName",
+      "label": "Customer Name",
+      "description": "Name des Antragstellers oder der antragstellenden Firma.",
+      "validationRule": "Pflichtfeld, mindestens 2 Zeichen."
+    },
+    {
+      "id": "applicationType",
+      "label": "Application Type",
+      "description": "Art des Antrags. Auswahl aus vordefinierter Liste.",
+      "validationRule": "Pflichtfeld."
+    }
+  ],
+
+  "businessRules": [
+    {
+      "id": "BR-001",
+      "rule": "Ein Antrag kann nur validiert werden, wenn alle Pflichtfelder ausgefuellt sind.",
+      "appliesTo": "validate"
+    },
+    {
+      "id": "BR-002",
+      "rule": "Nur ein bereits validierter Antrag kann freigegeben werden.",
+      "appliesTo": "approve"
+    }
+  ]
+}
