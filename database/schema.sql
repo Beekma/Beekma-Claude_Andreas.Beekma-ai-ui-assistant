@@ -1,10 +1,12 @@
 -- AI UI Assistant - Database schema (MariaDB)
--- Status: Draft, will be implemented in the database setup phase.
+-- Idempotent: kann mehrfach importiert werden (DROP + CREATE).
+-- Alle Tabellen werden explizit mit utf8mb4 / utf8mb4_unicode_ci erstellt.
+-- Ausfuehren als app_user via phpMyAdmin (kein CREATE DATABASE Recht noetig).
 
-CREATE DATABASE IF NOT EXISTS ai_assistant
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE ai_assistant;
+DROP TABLE IF EXISTS rate_limits;
+DROP TABLE IF EXISTS cache;
+DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS prompts;
 
 -- Versioned system prompts
 CREATE TABLE prompts (
@@ -15,7 +17,7 @@ CREATE TABLE prompts (
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_by    VARCHAR(100) NOT NULL,
   comment       VARCHAR(500)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Logs: every request and response
 CREATE TABLE logs (
@@ -29,7 +31,7 @@ CREATE TABLE logs (
   cost_usd        DECIMAL(10,6),
   cache_hit       TINYINT(1)   NOT NULL DEFAULT 0,
   created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Cache: question hash to answer
 CREATE TABLE cache (
@@ -39,7 +41,7 @@ CREATE TABLE cache (
   hit_count       INT          NOT NULL DEFAULT 1,
   created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_hit_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Rate limits per IP and time window
 CREATE TABLE rate_limits (
@@ -47,4 +49,4 @@ CREATE TABLE rate_limits (
   window_start    DATETIME     NOT NULL,
   request_count   INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (ip_hash, window_start)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
