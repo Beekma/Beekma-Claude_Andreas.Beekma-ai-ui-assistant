@@ -49,6 +49,81 @@ of control around it:
                  OpenAI API
 ```
 
+## Request flow
+
+```mermaid
+sequenceDiagram
+    actor Visitor
+    participant Frontend
+    participant Backend
+    participant Database
+    participant OpenAI
+
+    Visitor->>Frontend: submits question
+    Frontend->>Backend: POST /api/chat
+    Backend->>Database: check rate limit
+    Database-->>Backend: OK
+
+    Backend->>Database: check cache (question hash)
+
+    alt Cache hit
+        Database-->>Backend: cached answer
+        Backend->>Database: write log (cache_hit=true)
+        Backend-->>Frontend: answer
+        Frontend-->>Visitor: displays answer
+    else Cache miss
+        Database-->>Backend: no cache entry
+        Backend->>Database: load active system prompt
+        Database-->>Backend: system prompt
+        Backend->>Backend: read kb.json
+        Backend->>OpenAI: chat completion (prompt + KB + question)
+        OpenAI-->>Backend: generated answer
+        Backend->>Database: store in cache + write log
+        Backend-->>Frontend: answer
+        Frontend-->>Visitor: displays answer
+    end
+```
+
+## Application status lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+
+    state "In Review"              as IN_REVIEW
+    state "Returned to Applicant"  as RETURNED_TO_APPLICANT
+    state "On Hold"                as ON_HOLD
+
+    DRAFT               --> CREATED               : submit
+    DRAFT               --> CANCELLED             : cancel
+
+    CREATED             --> IN_REVIEW             : startReview
+    CREATED             --> CANCELLED             : cancel
+
+    IN_REVIEW           --> VALIDATED             : validate
+    IN_REVIEW           --> RETURNED_TO_APPLICANT : returnToApplicant
+    IN_REVIEW           --> ON_HOLD               : putOnHold
+    IN_REVIEW           --> CANCELLED             : cancel
+
+    RETURNED_TO_APPLICANT --> CREATED             : submit
+    RETURNED_TO_APPLICANT --> CANCELLED           : cancel
+
+    VALIDATED           --> APPROVED              : approve
+    VALIDATED           --> REJECTED              : reject
+
+    ON_HOLD             --> IN_REVIEW             : startReview
+    ON_HOLD             --> CANCELLED             : cancel
+
+    APPROVED            --> ARCHIVED              : archive
+    REJECTED            --> ARCHIVED              : archive
+    CANCELLED           --> ARCHIVED              : archive
+
+    ARCHIVED            --> [*]
+
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#000
+    class APPROVED,REJECTED,CANCELLED decision
+```
+
 ## Key principles
 
 - **Knowledge Base in Git, not DB**: human-readable, reviewable,

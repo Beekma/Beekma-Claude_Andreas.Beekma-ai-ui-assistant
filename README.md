@@ -37,6 +37,40 @@ The AI assistant introduces two separate technical roles:
 - **Frontend**: HTML / JavaScript
 - **AI**: OpenAI API (gpt-4.1-mini)
 
+## System architecture
+
+```mermaid
+flowchart LR
+    Visitor(["Visitor"])
+    Maintainer(["Maintainer"])
+
+    subgraph FE["Frontend (Browser)"]
+        ChatUI["Chat Widget"]
+        MaintUI["Maintainer Area"]
+    end
+
+    subgraph BE["Backend (PHP)"]
+        API["PHP Backend"]
+        DB[("MariaDB")]
+        KB[/"kb.json"/]
+    end
+
+    subgraph EXT["External"]
+        OpenAI["OpenAI API\ngpt-4.1-mini"]
+    end
+
+    Visitor     -->|"asks question"| ChatUI
+    Maintainer  -->|"manages"| MaintUI
+    ChatUI      -->|"HTTPS POST"| API
+    MaintUI     -->|"HTTPS"| API
+    API         -->|"SQL"| DB
+    API         -->|"JSON read"| KB
+    API         -->|"API call"| OpenAI
+
+    style EXT    fill:#fff7ed,stroke:#d97706
+    style OpenAI fill:#fef3c7,stroke:#d97706
+```
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
